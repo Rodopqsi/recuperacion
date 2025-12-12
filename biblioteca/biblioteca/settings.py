@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-y13$#sf6@dw^n^2ishcj(8-med)hz=altnx(9kw!g#&703zhqp'
+# Read sensitive values from environment for production; keep a fallback for local dev
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-y13$#sf6@dw^n^2ishcj(8-med)hz=altnx(9kw!g#&703zhqp')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1')
 
-ALLOWED_HOSTS = []
+# Allow hosts from env (comma separated) or any host for quick demo
+_allowed = os.getenv('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = [h for h in [a.strip() for a in _allowed.split(',')] if h]
 
 
 # Application definition
@@ -44,6 +48,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -126,15 +131,42 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Directory where `collectstatic` will collect static files for production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Use WhiteNoise storage for simple static file serving on Render/Vercel demo
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 # Media (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # CORS (development)
 # Allow requests from the React dev server
+FRONTEND_URL = os.getenv('FRONTEND_URL')
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
 ]
+if FRONTEND_URL:
+    CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
+
+# DATABASE: prefer DATABASE_URL env; otherwise fall back to sqlite for a quick demo
+if os.getenv('DATABASE_URL'):
+    try:
+        import dj_database_url
+        DATABASES = {
+            'default': dj_database_url.parse(os.environ['DATABASE_URL'])
+        }
+    except Exception:
+        # If dj_database_url is not available, keep existing DB settings or raise
+        pass
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # If you prefer to allow any origin during development, you can use:
 # CORS_ALLOW_ALL_ORIGINS = True

@@ -3,8 +3,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import Libro
-from .serializers import LibroSerializer
+from .models import Libro, Autor
+from .serializers import LibroSerializer, AutorSerializer
 
 
 class ProductoListCreate(APIView):
@@ -55,3 +55,17 @@ class LibroDetail(APIView):
             return Response({"error": "Libro no encontrado"}, status=status.HTTP_404_NOT_FOUND)
         libro.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AutorListCreate(APIView):
+    def get(self, request):
+        autores = Autor.objects.all()
+        serializer = AutorSerializer(autores, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = AutorSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
