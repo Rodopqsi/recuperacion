@@ -1,0 +1,4 @@
+Minimo 2 tables relacionadas , 1 imagen , uso de frameworks, django y react
+mysql
+despliegue
+uso de tailwind o css a seleccion
