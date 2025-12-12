@@ -69,3 +69,35 @@ class AutorListCreate(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AutorDetail(APIView):
+    def get_object(self, pk):
+        try:
+            return Autor.objects.get(pk=pk)
+        except Autor.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        autor = self.get_object(pk)
+        if not autor:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = AutorSerializer(autor)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        autor = self.get_object(pk)
+        if not autor:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = AutorSerializer(autor, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        autor = self.get_object(pk)
+        if not autor:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        autor.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
